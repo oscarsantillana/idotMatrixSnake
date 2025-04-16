@@ -6,6 +6,7 @@ import os
 import sys
 import random
 from idotmatrix import ConnectionManager, Graffiti, Text
+from utils.utils import digits
 
 async def snake_game(address, width=32, height=32, speed=0.2, wrap=True):
     # connect to device
@@ -97,10 +98,21 @@ async def snake_game(address, width=32, height=32, speed=0.2, wrap=True):
             current_speed = max(0.05, base_speed - (snake_length - 3) * 0.01)
             await asyncio.sleep(current_speed)
     finally:
-        # display final score on LED
-        result_text = Text()
+        # clear only the snake pixels before showing score
+        for x_pixel, y_pixel in snake:
+            await graffiti.setPixel(x=x_pixel, y=y_pixel, r=0, g=0, b=0)
+        # also clear the apple pixel
+        await graffiti.setPixel(x=apple[0], y=apple[1], r=0, g=0, b=0)
+        # display final score on LED using utils.digits
         score = snake_length - 3
-        await result_text.setMode(text=f"{score}", font_size=8, text_mode=0, speed=100)
+        # draw each digit pattern on the LED
+        for idx, ch in enumerate(str(score)):
+            pattern = digits[ch]
+            x_offset = idx * (len(pattern[0]) + 1)
+            for y, row in enumerate(pattern):
+                for x, pixel in enumerate(row):
+                    if pixel == '1':
+                        await graffiti.setPixel(x=x_offset + x, y=y, r=0, g=255, b=0)
         # pause so player can see result
         await asyncio.sleep(3)
         # cleanup curses and console message
