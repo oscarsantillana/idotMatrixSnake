@@ -2,6 +2,7 @@ asyncio
 idotmatrix==0.0.9
 bleak
 pillow
+pygame
 argparse
 requests
 numpy

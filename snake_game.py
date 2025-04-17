@@ -5,10 +5,19 @@ import curses
 import os
 import sys
 import random
+import pygame
 from idotmatrix import ConnectionManager, Graffiti, Text, Gif
 from utils.utils import digits
 
 async def snake_game(address, width=32, height=32, speed=0.2, wrap=True):
+    # initialize pygame for joystick support
+    pygame.init()
+    joystick = None
+    if pygame.joystick.get_count() > 0:
+        joystick = pygame.joystick.Joystick(0)
+        joystick.init()
+    else:
+        print("No joystick detected, using keyboard controls.")
     # connect to device
     conn = ConnectionManager()
     if address.lower() == 'auto':
@@ -41,20 +50,39 @@ async def snake_game(address, width=32, height=32, speed=0.2, wrap=True):
     base_speed = speed
     try:
         while True:
-            # handle input
-            key = stdscr.getch()
-            if key in (ord('q'), 27):  # quit on 'q' or ESC
-                break
-            # compute requested direction
+            # handle input from joystick or keyboard
+            pygame.event.pump()
             new_dir = None
-            if key == curses.KEY_UP:
-                new_dir = (0, -1)
-            elif key == curses.KEY_DOWN:
-                new_dir = (0, 1)
-            elif key == curses.KEY_LEFT:
-                new_dir = (-1, 0)
-            elif key == curses.KEY_RIGHT:
-                new_dir = (1, 0)
+            if joystick:
+                # try hat control if available, avoid invalid hat error
+                if joystick.get_numhats() > 0:
+                    hat = joystick.get_hat(0)
+                    if hat[0] != 0 or hat[1] != 0:
+                        new_dir = (hat[0], -hat[1])
+                # fallback to analog axes if no hat input
+                if new_dir is None:
+                    x_axis = joystick.get_axis(0)
+                    y_axis = joystick.get_axis(1)
+                    threshold = 0.5
+                    if abs(x_axis) > abs(y_axis) and abs(x_axis) > threshold:
+                        new_dir = (1 if x_axis > 0 else -1, 0)
+                    elif abs(y_axis) > threshold:
+                        new_dir = (0, 1 if y_axis > 0 else -1)
+                # quit if joystick button 0 pressed
+                if joystick.get_button(0):
+                    break
+            else:
+                key = stdscr.getch()
+                if key in (ord('q'), 27):  # quit on 'q' or ESC
+                    break
+                if key == curses.KEY_UP:
+                    new_dir = (0, -1)
+                elif key == curses.KEY_DOWN:
+                    new_dir = (0, 1)
+                elif key == curses.KEY_LEFT:
+                    new_dir = (-1, 0)
+                elif key == curses.KEY_RIGHT:
+                    new_dir = (1, 0)
             # only apply if not reversing
             if new_dir and new_dir != (-direction[0], -direction[1]):
                 direction = new_dir
