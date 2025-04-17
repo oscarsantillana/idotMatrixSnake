@@ -5,7 +5,7 @@ import curses
 import os
 import sys
 import random
-from idotmatrix import ConnectionManager, Graffiti, Text
+from idotmatrix import ConnectionManager, Graffiti, Text, Gif
 from utils.utils import digits
 
 async def snake_game(address, width=32, height=32, speed=0.2, wrap=True):
@@ -121,6 +121,9 @@ async def snake_game(address, width=32, height=32, speed=0.2, wrap=True):
         curses.echo()
         curses.endwin()
         print(f"Game Over. Your score: {score}")
+        # display end-game GIF animation
+        gif = Gif()
+        await gif.uploadUnprocessed(file_path=os.path.join("images", "snake.gif"))
         # disconnect
         try:
             await conn.disconnect()
