@@ -72,6 +72,10 @@ Agent decisions are appended to `snake_agent.log` with timestamp, head position,
 └── requirements.txt     # Python dependencies
 ```
 
+## Acknowledgements
+
+Big thanks to the author of the [python3-idotmatrix-library](https://github.com/derkalle4/python3-idotmatrix-library) for providing the LED matrix interface used in this project.
+
 ## License
 
 MIT © 2025 <Your Name>
