@@ -8,8 +8,9 @@ import random
 import pygame
 from idotmatrix import ConnectionManager, Graffiti, Text, Gif
 from utils.utils import digits
+from agents.greedy_agent import GreedyAgent
 
-async def snake_game(address, width=32, height=32, speed=0.2, wrap=True):
+async def snake_game(address, width=32, height=32, speed=0.2, wrap=True, agent=None):
     # initialize pygame for joystick support
     pygame.init()
     joystick = None
@@ -50,42 +51,46 @@ async def snake_game(address, width=32, height=32, speed=0.2, wrap=True):
     base_speed = speed
     try:
         while True:
-            # handle input from joystick or keyboard
-            pygame.event.pump()
-            new_dir = None
-            if joystick:
-                # try hat control if available, avoid invalid hat error
-                if joystick.get_numhats() > 0:
-                    hat = joystick.get_hat(0)
-                    if hat[0] != 0 or hat[1] != 0:
-                        new_dir = (hat[0], -hat[1])
-                # fallback to analog axes if no hat input
-                if new_dir is None:
-                    x_axis = joystick.get_axis(0)
-                    y_axis = joystick.get_axis(1)
-                    threshold = 0.5
-                    if abs(x_axis) > abs(y_axis) and abs(x_axis) > threshold:
-                        new_dir = (1 if x_axis > 0 else -1, 0)
-                    elif abs(y_axis) > threshold:
-                        new_dir = (0, 1 if y_axis > 0 else -1)
-                # quit if joystick button 0 pressed
-                if joystick.get_button(0):
-                    break
+            # agent-based control vs manual input
+            if agent:
+                direction = agent.choose_direction(snake, apple, width, height, direction, wrap)
             else:
-                key = stdscr.getch()
-                if key in (ord('q'), 27):  # quit on 'q' or ESC
-                    break
-                if key == curses.KEY_UP:
-                    new_dir = (0, -1)
-                elif key == curses.KEY_DOWN:
-                    new_dir = (0, 1)
-                elif key == curses.KEY_LEFT:
-                    new_dir = (-1, 0)
-                elif key == curses.KEY_RIGHT:
-                    new_dir = (1, 0)
-            # only apply if not reversing
-            if new_dir and new_dir != (-direction[0], -direction[1]):
-                direction = new_dir
+                # handle input from joystick or keyboard
+                pygame.event.pump()
+                new_dir = None
+                if joystick:
+                    # try hat control if available, avoid invalid hat error
+                    if joystick.get_numhats() > 0:
+                        hat = joystick.get_hat(0)
+                        if hat[0] != 0 or hat[1] != 0:
+                            new_dir = (hat[0], -hat[1])
+                    # fallback to analog axes if no hat input
+                    if new_dir is None:
+                        x_axis = joystick.get_axis(0)
+                        y_axis = joystick.get_axis(1)
+                        threshold = 0.5
+                        if abs(x_axis) > abs(y_axis) and abs(x_axis) > threshold:
+                            new_dir = (1 if x_axis > 0 else -1, 0)
+                        elif abs(y_axis) > threshold:
+                            new_dir = (0, 1 if y_axis > 0 else -1)
+                    # quit if joystick button 0 pressed
+                    if joystick.get_button(0):
+                        break
+                else:
+                    key = stdscr.getch()
+                    if key in (ord('q'), 27):  # quit on 'q' or ESC
+                        break
+                    if key == curses.KEY_UP:
+                        new_dir = (0, -1)
+                    elif key == curses.KEY_DOWN:
+                        new_dir = (0, 1)
+                    elif key == curses.KEY_LEFT:
+                        new_dir = (-1, 0)
+                    elif key == curses.KEY_RIGHT:
+                        new_dir = (1, 0)
+                # only apply if not reversing
+                if new_dir and new_dir != (-direction[0], -direction[1]):
+                    direction = new_dir
 
             head = snake[-1]
             # calculate next head position
@@ -167,6 +172,7 @@ async def main():
     speed_input = input("Game speed (seconds per move) [0.1]: ") or "0.1"
     size_input = input("Board size (16 or 32) [32]: ") or "32"
     wrap_input = input("Wrap around edges? (y/n) [y]: ") or "y"
+    agent_input = input("Use agent? (y/n) [n]: ") or "n"
     try:
         speed = float(speed_input)
     except ValueError:
@@ -178,8 +184,9 @@ async def main():
     except ValueError:
         size = 32
     wrap = wrap_input.lower() in ('y', 'yes')
+    agent = GreedyAgent() if agent_input.lower() in ('y', 'yes') else None
 
-    await snake_game(address, width=size, height=size, speed=speed, wrap=wrap)
+    await snake_game(address, width=size, height=size, speed=speed, wrap=wrap, agent=agent)
 
 if __name__ == '__main__':
     asyncio.run(main())
