@@ -9,6 +9,7 @@ import pygame
 from idotmatrix import ConnectionManager, Graffiti, Text, Gif
 from utils.utils import digits
 from agents.greedy_agent import GreedyAgent
+from agents.a_star_agent import AStarAgent
 
 async def snake_game(address, width=32, height=32, speed=0.2, wrap=True, agent=None):
     # initialize pygame for joystick support
@@ -172,7 +173,7 @@ async def main():
     speed_input = input("Game speed (seconds per move) [0.1]: ") or "0.1"
     size_input = input("Board size (16 or 32) [32]: ") or "32"
     wrap_input = input("Wrap around edges? (y/n) [y]: ") or "y"
-    agent_input = input("Use agent? (y/n) [n]: ") or "n"
+    agent_input = input("Use agent? (none/greedy/astar) [n]: ") or "n"
     try:
         speed = float(speed_input)
     except ValueError:
@@ -184,7 +185,12 @@ async def main():
     except ValueError:
         size = 32
     wrap = wrap_input.lower() in ('y', 'yes')
-    agent = GreedyAgent() if agent_input.lower() in ('y', 'yes') else None
+    if agent_input.lower() in ('greedy', 'g'):
+        agent = GreedyAgent()
+    elif agent_input.lower() in ('astar', 'a'):
+        agent = AStarAgent()
+    else:
+        agent = None
 
     await snake_game(address, width=size, height=size, speed=speed, wrap=wrap, agent=agent)
 
